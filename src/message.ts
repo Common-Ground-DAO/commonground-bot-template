@@ -11,6 +11,10 @@ export function extractText(body: MessageBody): string {
     .trim();
 }
 
+export function isMentioned(body: MessageBody, userId: string): boolean {
+  return body.content.some(part => part.type === 'mention' && part.userId === userId);
+}
+
 export function matchTrigger(text: string, trigger: string): string | null {
   const normalized = text.trim();
   if (!normalized) return null;

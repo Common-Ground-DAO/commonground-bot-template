@@ -1,6 +1,13 @@
 export type MessageBody = {
   version: '1';
-  content: Array<Record<string, unknown> & { type: string }>;
+  content: MessageBodyPart[];
+};
+
+export type MessageBodyPart = Record<string, unknown> & {
+  type: string;
+  value?: string;
+  userId?: string;
+  alias?: string;
 };
 
 export type ApiMessage = {
@@ -11,6 +18,9 @@ export type ApiMessage = {
   parentMessageId: string | null;
   createdAt: string;
   updatedAt: string;
+  // Present on Bot API v1 live `new` events. Optional here because historical
+  // message reads return the canonical stored message without delivery metadata.
+  creatorIsBot?: boolean;
 };
 
 export type MessageEvent =
@@ -27,9 +37,20 @@ export type MessageEvent =
     };
 
 export type BotIdentity = {
+  protocolVersion: '1';
   userId: string;
   deviceId: string;
   tokenId: string;
+};
+
+export type InvocationContext = {
+  mentioned: boolean;
+  replyToBot: boolean;
+  triggerMatched: boolean;
+  senderIsBot: boolean;
+  shouldRespond: boolean;
+  text: string;
+  input: string;
 };
 
 export type ApiEnvelope<T> =

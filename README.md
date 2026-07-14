@@ -7,7 +7,13 @@ A small, production-minded starter for a [Common Ground](https://cg.mogged.eu) c
 - `hello` mode: replies `hello` without any external AI service;
 - `openai` mode: uses the OpenAI Responses API for community-aware answers.
 
-The default trigger is `!bot`, replies are threaded under the triggering message, and the bot only processes one configured channel. It ignores its own messages, serializes work, bounds its duplicate-message cache, reconnects automatically, exposes a container health check, and never writes credentials to logs.
+By default the bot responds when it is selected in an `@mention`, when a human
+replies to one of its messages, or when a message matches `!bot`. Replies are
+threaded under the triggering message, and the bot only processes one
+configured channel. It ignores bot-authored messages to prevent multi-bot
+reply loops, serializes work, bounds its duplicate-message cache, reconnects
+automatically, exposes a container health check, and never writes credentials
+to logs.
 
 ## Quick start
 
@@ -21,7 +27,8 @@ npm test
 npm run dev
 ```
 
-Then send `!bot` in the configured channel. In the default mode the bot replies `hello`.
+Then mention the bot, reply to one of its messages, or send `!bot` in the
+configured channel. In the default mode the bot replies `hello`.
 
 For a container deployment:
 
@@ -74,7 +81,14 @@ Restart the service after changing configuration. The implementation uses `clien
 
 ## Behavior and customization
 
-`BOT_TRIGGER=!bot` matches `!bot` and `!bot your question`. Set it to an empty value to process every non-empty message in the configured channel. The safest place to add commands, retrieval, moderation rules, or tool calls is in `src/responder.ts`; transport and credential handling remain isolated in `src/cg-client.ts` and `src/bot.ts`.
+`BOT_TRIGGER=!bot` matches `!bot` and `!bot your question`. The trigger is a
+bot-owned policy and may be changed to any string. Setting it to an empty value
+processes every non-empty human message in the configured channel. Selected
+mentions are matched by immutable user ID, not display name; reply parents are
+resolved through Bot API v1. The safest place to add commands, retrieval,
+moderation rules, or tool calls is in `src/responder.ts`; transport,
+invocation detection, and credential handling remain isolated in
+`src/cg-client.ts`, `src/invocation.ts`, and `src/bot.ts`.
 
 This template intentionally does not request access to DMs, uploads, calls, moderation, or human profile APIs. Common Ground enforces that boundary on the server even if the bot code is modified.
 
@@ -86,7 +100,9 @@ npm test
 npm run build
 ```
 
-CI runs type checking, unit tests, and a clean Docker build. Use named bot tokens per environment. For rotation, issue a new token, deploy it, verify `/api/v2/Bot/whoami`, and only then revoke the old token.
+CI runs type checking, unit tests, and a clean Docker build. Use named bot
+tokens per environment. For rotation, issue a new token, deploy it, verify
+`/api/bot/v1/whoami`, and only then revoke the old token.
 
 ## License
 
