@@ -1,0 +1,28 @@
+{
+  "name": "commonground-community-bot-template",
+  "version": "1.0.0",
+  "private": false,
+  "description": "A production-ready Common Ground community bot template with hello and OpenAI modes.",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/src/index.js",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "openai": "^6.15.0",
+    "socket.io-client": "^4.8.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.8.0",
+    "vitest": "^3.2.0"
+  },
+  "license": "MIT"
+}
