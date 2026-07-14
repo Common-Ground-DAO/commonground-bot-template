@@ -45,6 +45,10 @@ export class CommunityBot {
     this.socket.on('disconnect', (reason) => {
       this.health.socketConnected = false;
       this.logger.warn('Disconnected from Common Ground events', { reason });
+      // Socket.IO normally reconnects automatically. A server-initiated
+      // disconnect is the exception, so explicitly reactivate the socket after
+      // Common Ground restarts or deliberately cycles its WebSocket service.
+      if (reason === 'io server disconnect') this.socket?.connect();
     });
     this.socket.on('connect_error', (error) => {
       this.health.socketConnected = false;
