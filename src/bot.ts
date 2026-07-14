@@ -3,9 +3,9 @@ import type { Config } from './config.js';
 import { CommonGroundClient } from './cg-client.js';
 import type { HealthState } from './health.js';
 import type { Logger } from './logger.js';
-import { extractText, matchTrigger } from './message.js';
 import type { MessageEvent } from './types.js';
 import type { Responder } from './responder.js';
+import { resolveInvocation } from './invocation.js';
 
 const MAX_SEEN_MESSAGES = 2_000;
 
@@ -25,13 +25,16 @@ export class CommunityBot {
 
   async start(): Promise<void> {
     const identity = await this.api.whoami();
+    if (identity.protocolVersion !== '1') {
+      throw new Error(`Unsupported Common Ground bot protocol: ${identity.protocolVersion}`);
+    }
     this.botUserId = identity.userId;
     this.health.authenticated = true;
     this.logger.info('Authenticated with Common Ground', { botUserId: identity.userId });
 
     this.socket = io(this.config.cgUrl, {
       path: '/api/ws/',
-      auth: { token: this.config.botToken },
+      auth: { token: this.config.botToken, protocolVersion: '1' },
       reconnection: true,
       reconnectionDelay: 1_000,
       reconnectionDelayMax: 15_000,
@@ -71,17 +74,31 @@ export class CommunityBot {
   private async handleEvent(event: MessageEvent): Promise<void> {
     if (event.action !== 'new') return;
     const message = event.data;
+    const botUserId = this.botUserId;
+    if (!botUserId) throw new Error('Bot identity is not initialized');
     if (message.channelId !== this.config.channelId) return;
-    if (message.creatorId === this.botUserId) return;
+    if (message.creatorId === botUserId) return;
+    if (message.creatorIsBot) return;
     if (this.seen.has(message.id)) return;
     this.remember(message.id);
     this.health.processed += 1;
 
-    const input = matchTrigger(extractText(message.body), this.config.trigger);
-    if (input === null) return;
+    const invocation = await resolveInvocation(
+      message,
+      botUserId,
+      this.config.trigger,
+      messageIds => this.api.messagesById(messageIds),
+    );
+    if (!invocation.shouldRespond) return;
 
-    this.logger.info('Matched a community message', { messageId: message.id, channelId: message.channelId });
-    const output = await this.responder(input);
+    this.logger.info('Matched a community message', {
+      messageId: message.id,
+      channelId: message.channelId,
+      mentioned: invocation.mentioned,
+      replyToBot: invocation.replyToBot,
+      triggerMatched: invocation.triggerMatched,
+    });
+    const output = await this.responder(invocation.input);
     await this.api.reply(message.id, output.slice(0, 8_000));
     this.health.replied += 1;
     this.logger.info('Replied to a community message', { messageId: message.id });

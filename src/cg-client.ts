@@ -21,11 +21,18 @@ export class CommonGroundClient {
   ) {}
 
   async whoami(): Promise<BotIdentity> {
-    return this.post<BotIdentity>('/api/v2/Bot/whoami', {});
+    return this.post<BotIdentity>('/api/bot/v1/whoami', {});
+  }
+
+  async messagesById(messageIds: string[]): Promise<ApiMessage[]> {
+    return this.post<ApiMessage[]>('/api/bot/v1/messages/messagesById', {
+      access: { communityId: this.communityId, channelId: this.channelId },
+      messageIds,
+    });
   }
 
   async reply(parentMessageId: string, value: string): Promise<ApiMessage> {
-    return this.post<ApiMessage>('/api/v2/Message/createMessage', {
+    return this.post<ApiMessage>('/api/bot/v1/messages/createMessage', {
       id: crypto.randomUUID(),
       access: { communityId: this.communityId, channelId: this.channelId },
       body: textBody(value),

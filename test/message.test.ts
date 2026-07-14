@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { extractText, matchTrigger, textBody } from '../src/message.js';
+import { extractText, isMentioned, matchTrigger, textBody } from '../src/message.js';
 
 describe('message helpers', () => {
   it('extracts only safe textual content', () => {
@@ -9,11 +9,20 @@ describe('message helpers', () => {
         content: [
           { type: 'text', value: '!bot first' },
           { type: 'newline' },
-          { type: 'mention', value: 'ignored' },
+          { type: 'mention', userId: 'bot-id', alias: 'Ignored Bot' },
           { type: 'text', value: 'second' },
         ],
       }),
     ).toBe('!bot first\nsecond');
+  });
+
+  it('matches selected mentions by immutable user ID', () => {
+    const body = {
+      version: '1' as const,
+      content: [{ type: 'mention', userId: 'bot-id', alias: 'Renamable Bot' }],
+    };
+    expect(isMentioned(body, 'bot-id')).toBe(true);
+    expect(isMentioned(body, 'different-id')).toBe(false);
   });
 
   it('matches an exact trigger and a trigger with input', () => {
